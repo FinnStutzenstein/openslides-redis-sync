@@ -11,9 +11,11 @@ loop = asyncio.get_event_loop()
 
 
 async def main(production_redis_address, read_only_redis_address):
-    logging.info(f"Production redis: {production_redis_address}")
-    logging.info(f"Read only redis:  {read_only_redis_address}")
+    logging.info("Production redis: host={} port={}".format(*production_redis_address))
+    logging.info("Read only redis:  host={} port={}".format(*read_only_redis_address))
 
+    production_redis = None
+    ro_redis = None
     try:
         production_redis = await aioredis.create_redis(
             production_redis_address, loop=loop
@@ -24,7 +26,7 @@ async def main(production_redis_address, read_only_redis_address):
         synchronizer = Synchronizer(production_redis, ro_redis)
         await synchronizer.sync_redis()
     except Exception as e:
-        logging.log("An exception occurred: {}".format(e))
+        logging.warning("An exception occurred: {}".format(e))
     finally:
         if production_redis:
             production_redis.close()
