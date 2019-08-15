@@ -26,7 +26,7 @@ async def main(production_redis_address, read_only_redis_address):
         synchronizer = Synchronizer(production_redis, ro_redis)
         await synchronizer.sync_redis()
     except Exception as e:
-        logging.warning("An exception occurred: {}".format(e))
+        logging.critical("An exception occurred: {}".format(e))
     finally:
         if production_redis:
             production_redis.close()
@@ -40,12 +40,24 @@ class Synchronizer:
     change_id_key = "element_cache_change_id"
     full_data_key = "element_cache_full_data"
     schema_key = "element_cache_schema"
+    production_marker_key = "element_cache_production_marker"
 
     def __init__(self, production_redis, ro_redis):
         self.production_redis = production_redis
         self.ro_redis = ro_redis
 
     async def sync_redis(self):
+        # 0) Check, if the production redis is the correct one. The production worker
+        #    should write the special key (see self.production_marker_key) into the redis,
+        #    so this script can verify, that it is reading from the correct redis.
+        if not bool(await self.production_redis.get(self.production_marker_key)):
+            logging.critical(
+                "The production redis DOES NOT have the marker key '{}'. Are you sure to read from the correct redis instance? Abording...".format(
+                    self.production_marker_key
+                )
+            )
+            return
+
         logging.info("\nStart syncing...")
 
         # 1) Get important values from ro_redis:
