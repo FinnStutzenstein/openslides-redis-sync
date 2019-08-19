@@ -37,10 +37,10 @@ async def main(production_redis_address, read_only_redis_address):
 
 
 class Synchronizer:
-    change_id_key = "element_cache_change_id"
-    full_data_key = "element_cache_full_data"
-    schema_key = "element_cache_schema"
-    production_marker_key = "element_cache_production_marker"
+    change_id_key = "change_id"
+    full_data_key = "full_data"
+    schema_key = "schema"
+    production_marker_key = "production_marker"
 
     def __init__(self, production_redis, ro_redis):
         self.production_redis = production_redis
