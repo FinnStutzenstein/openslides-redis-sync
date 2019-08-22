@@ -16,6 +16,7 @@ async def main(production_redis_address, read_only_redis_address):
 
     production_redis = None
     ro_redis = None
+    exception = False
     try:
         production_redis = await aioredis.create_redis(
             production_redis_address, loop=loop
@@ -27,6 +28,7 @@ async def main(production_redis_address, read_only_redis_address):
         await synchronizer.sync_redis()
     except Exception as e:
         logging.critical("An exception occurred: {}".format(e))
+        exception = True
     finally:
         if production_redis:
             production_redis.close()
@@ -34,6 +36,9 @@ async def main(production_redis_address, read_only_redis_address):
         if ro_redis:
             ro_redis.close()
             await ro_redis.wait_closed()
+
+    if exception:
+        sys.exit(23)
 
 
 class Synchronizer:
@@ -105,7 +110,10 @@ class Synchronizer:
             self.change_id_ro = "-inf"
             self.lowest_change_id_ro = None  # invalid value
         else:
-            self.change_id_ro = change_id_ro[0][1]
+            if isinstance(change_id_ro[0], tuple):
+                self.change_id_ro = change_id_ro[0][1]
+            else:
+                self.change_id_ro = change_id_ro[1]
             self.lowest_change_id_ro = await self.ro_redis.zscore(
                 self.change_id_key, "_config:lowest_change_id"
             )

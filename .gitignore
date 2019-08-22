@@ -8,3 +8,5 @@
 # Virtual Environment
 .virtualenv*/*
 .venv/*
+
+wrapper.sh
